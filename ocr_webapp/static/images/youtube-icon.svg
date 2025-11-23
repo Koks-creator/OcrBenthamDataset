@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- YouTube Logo - zaokrąglony prostokąt -->
+  <rect x="40" y="60" width="120" height="80" rx="20" fill="#FF0000"/>
+  
+  <!-- Play Button Triangle -->
+  <polygon points="85,80 85,120 125,100" fill="white"/>
+</svg>

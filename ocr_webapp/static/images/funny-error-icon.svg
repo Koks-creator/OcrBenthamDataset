@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 320">
+  <!-- Monitor Base -->
+  <rect x="100" y="260" width="100" height="20" rx="5" fill="#4A4A4A"/>
+  <rect x="130" y="240" width="40" height="20" fill="#3D3D3D"/>
+  
+  <!-- Monitor Body -->
+  <rect x="50" y="60" width="200" height="160" rx="10" fill="#5D6D7E"/>
+  <rect x="60" y="70" width="180" height="130" rx="5" fill="#F5F5F5"/>
+  
+  <!-- Error Screen -->
+  <rect x="70" y="80" width="160" height="110" rx="3" fill="#3498DB"/>
+  
+  <!-- Error Message Box -->
+  <rect x="90" y="100" width="120" height="60" rx="5" fill="#FFFFFF"/>
+  <text x="150" y="120" font-family="Arial" font-size="18" text-anchor="middle" fill="#E74C3C">ERROR</text>
+  <text x="150" y="150" font-family="Arial" font-size="8" text-anchor="middle" fill="#7F8C8D">Oops! Something went wrong</text>
+  
+  <!-- Computer Face -->
+  <circle cx="110" cy="190" r="12" fill="#FFFFFF"/> <!-- Left eye -->
+  <circle cx="190" cy="190" r="12" fill="#FFFFFF"/> <!-- Right eye -->
+  
+  <!-- X-eyes for error -->
+  <line x1="104" y1="184" x2="116" y2="196" stroke="#E74C3C" stroke-width="3"/>
+  <line x1="116" y1="184" x2="104" y2="196" stroke="#E74C3C" stroke-width="3"/>
+  <line x1="184" y1="184" x2="196" y2="196" stroke="#E74C3C" stroke-width="3"/>
+  <line x1="196" y1="184" x2="184" y2="196" stroke="#E74C3C" stroke-width="3"/>
+  
+  <!-- Surprised Mouth -->
+  <path d="M130,215 C130,225 170,225 170,215" fill="none" stroke="#E74C3C" stroke-width="3"/>
+  
+  <!-- Sweat Droplet -->
+  <path d="M210,160 Q215,170 210,180" fill="none" stroke="#3498DB" stroke-width="3"/>
+  <circle cx="210" cy="180" r="3" fill="#3498DB"/>
+  
+  <!-- Error Signs above monitor -->
+  <g transform="translate(150,40) rotate(15)">
+    <text font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#E74C3C">!</text>
+  </g>
+  <g transform="translate(170,30) rotate(-10)">
+    <text font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#E74C3C">?</text>
+  </g>
+  <g transform="translate(130,35) rotate(-15)">
+    <text font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="#E74C3C">!</text>
+  </g>
+</svg>

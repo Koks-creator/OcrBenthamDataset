@@ -1,0 +1,84 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container text-center">
+  <h1 class="display-1 my-4" style="padding: 50px;">Simple OCR</h1>
+
+  <div class="jumbotron position-relative" style="background-color: #212529;">
+    <div class="row mb-4">
+      <div class="col text-start">
+        <button
+          type="button"
+          class="btn btn-secondary px-4"
+          data-bs-container="body"
+          data-bs-toggle="popover"
+          data-bs-placement="right"
+          data-bs-content="INFO: this OCR model was trained on quite short sequences,
+           mostly single words (since it was traied on IAM dataset), so don't expect too much, https://fki.tic.heia-fr.ch/databases/iam-handwriting-database"
+        >
+          Read it
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading Spinner (hidden by default) -->
+    <div id="loadingSpinner" class="spinner-container" style="display: none;">
+      <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2 text-light">Processing images, please wait...</p>
+    </div>
+
+    <div class="row justify-content-center">
+      <div class="col-md-6 col-12">
+        <form id="uploadForm" method="post" enctype="multipart/form-data">
+          {{ form.hidden_tag() }}
+          <fieldset class="form-group">
+            <div class="uploadFileContainer mx-auto" style="width: 100%;">
+              {% if form.images.errors %}
+                {{ form.images(class='form-control is-invalid', multiple=True) }}
+                {% for error in form.images.errors %}
+                  <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+              {% else %}
+                {{ form.images(class='form-control') }}
+              {% endif %}
+              <br>
+              {{ form.submit(class='submitButton') }}
+            </div>
+          </fieldset>
+        </form>
+      </div>
+    </div>
+   {% if results and image_filenames %}
+      {% for result in results %}
+          {{ result }}
+      {% endfor %}
+      <br>
+      <br>
+      {% for image_filename in image_filenames %}
+          <img src="{{ url_for('static', filename='temp_uploads/' ~ image_filename) }}">
+      {% endfor %}
+
+      {{ json_res }}
+   
+   {% endif %}
+  </div>
+</div>
+
+<style>
+  .spinner-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+</style>
+{% endblock content %}
