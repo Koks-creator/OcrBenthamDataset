@@ -50,35 +50,400 @@
         </form>
       </div>
     </div>
-   {% if results and image_filenames %}
-      {% for result in results %}
-          {{ result }}
-      {% endfor %}
-      <br>
-      <br>
-      {% for image_filename in image_filenames %}
-          <img src="{{ url_for('static', filename='temp_uploads/' ~ image_filename) }}">
-      {% endfor %}
 
-      {{ json_res }}
-   
-   {% endif %}
+    {% if results and image_filenames %}
+    
+      <!-- Results Section - Side by Side Layout -->
+      <div class="ocr-results-wrapper mt-4">
+        <div class="ocr-results-grid">
+          
+          <!-- Left: Text Results -->
+          <div class="ocr-text-panel">
+            <div class="panel-header">
+              <span class="panel-title">📝 Rozpoznany tekst</span>
+              <div class="panel-actions">
+                <span id="charCount" class="char-count"></span>
+                <button id="copyBtn" class="copy-btn" title="Kopiuj do schowka">
+                  <span class="copy-icon">📋</span>
+                  <span class="copy-text">Kopiuj</span>
+                </button>
+              </div>
+            </div>
+            <div id="resultsBox" class="results-box">{% for i in range(results | length) %}{{ image_filenames[i] }} <br><br> {{ results[i] }}<br>{% if not loop.last %}
+{% endif %}{% endfor %}</div>
+          </div>
+          
+          <!-- Right: Image Preview -->
+          <div class="ocr-image-panel">
+            <div class="panel-header">
+              <span class="panel-title">🖼️ Obraz źródłowy</span>
+              <div class="panel-actions">
+                <span id="imageCounter" class="image-counter">1 / {{ image_filenames|length }}</span>
+                {% if image_filenames|length > 1 %}
+                <button id="prevThumb" class="nav-btn" title="Poprzedni">❮</button>
+                <button id="nextThumb" class="nav-btn" title="Następny">❯</button>
+                {% endif %}
+              </div>
+            </div>
+            <div class="image-preview-container">
+              <img id="previewImg" 
+                   src="{{ url_for('static', filename='temp_uploads/' ~ image_filenames[0]) }}" 
+                   class="preview-image"
+                   title="Kliknij aby powiększyć">
+              
+              <!-- Thumbnails (jeśli więcej niż 1 obrazek) -->
+              {% if image_filenames|length > 1 %}
+              <div class="thumbnails-strip">
+                {% for image_filename in image_filenames %}
+                <img src="{{ url_for('static', filename='temp_uploads/' ~ image_filename) }}" 
+                     class="thumbnail {% if loop.first %}active{% endif %}"
+                     data-index="{{ loop.index0 }}"
+                     data-full="{{ url_for('static', filename='temp_uploads/' ~ image_filename) }}">
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          
+        </div>
+      </div>
+
+      <div class="mt-3">
+        {{ json_res }}
+      </div>
+    {% endif %}
   </div>
 </div>
 
-<style>
-  .spinner-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
+<!-- Custom Lightbox -->
+<div id="lightbox" class="lightbox-overlay">
+  <div class="lightbox-controls">
+    <div class="zoom-controls">
+      <button id="zoomOut" class="lb-btn" title="Oddal (-)">−</button>
+      <span id="zoomLevel" class="zoom-indicator">100%</span>
+      <button id="zoomIn" class="lb-btn" title="Przybliż (+)">+</button>
+      <button id="zoomReset" class="lb-btn" title="Reset (0)">⟲</button>
+    </div>
+    <div class="nav-controls">
+      <button id="prevImg" class="lb-btn" title="Poprzedni (←)">❮</button>
+      <span id="imgCounter" class="img-counter">1 / 1</span>
+      <button id="nextImg" class="lb-btn" title="Następny (→)">❯</button>
+    </div>
+    <div class="action-controls">
+      <button id="downloadImg" class="lb-btn" title="Pobierz (S)">⬇</button>
+      <button id="closeLightbox" class="lb-btn" title="Zamknij (Esc)">✕</button>
+    </div>
+  </div>
+  
+  <div class="lightbox-content">
+    <div id="imageContainer" class="image-container">
+      <img id="lightboxImg" src="" alt="Preview">
+    </div>
+  </div>
+  
+  <div class="zoom-hint" id="zoomHint">
+    Użyj kółka myszy lub przycisków +/- aby przybliżać
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  
+  // =====================
+  // COPY FUNCTIONALITY
+  // =====================
+  const copyBtn = document.getElementById('copyBtn');
+  const resultsBox = document.getElementById('resultsBox');
+  const charCount = document.getElementById('charCount');
+  
+  if (resultsBox && charCount) {
+    const text = resultsBox.textContent;
+    const chars = text.length;
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    charCount.textContent = `${chars} zn. / ${words} sł.`;
   }
-</style>
+  
+  if (copyBtn && resultsBox) {
+    copyBtn.addEventListener('click', async () => {
+      const text = resultsBox.textContent;
+      
+      try {
+        await navigator.clipboard.writeText(text);
+        showCopySuccess();
+      } catch (err) {
+        const range = document.createRange();
+        range.selectNodeContents(resultsBox);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        document.execCommand('copy');
+        selection.removeAllRanges();
+        showCopySuccess();
+      }
+    });
+    
+    function showCopySuccess() {
+      const icon = copyBtn.querySelector('.copy-icon');
+      const text = copyBtn.querySelector('.copy-text');
+      
+      copyBtn.classList.add('copied');
+      icon.textContent = '✓';
+      text.textContent = 'Skopiowano!';
+      
+      setTimeout(() => {
+        copyBtn.classList.remove('copied');
+        icon.textContent = '📋';
+        text.textContent = 'Kopiuj';
+      }, 2000);
+    }
+  }
+
+  // =====================
+  // THUMBNAIL NAVIGATION
+  // =====================
+  const thumbnails = document.querySelectorAll('.thumbnail');
+  const previewImg = document.getElementById('previewImg');
+  const imageCounter = document.getElementById('imageCounter');
+  const prevThumb = document.getElementById('prevThumb');
+  const nextThumb = document.getElementById('nextThumb');
+  let currentThumbIndex = 0;
+  
+  function updatePreview(index) {
+    if (thumbnails.length === 0) return;
+    
+    currentThumbIndex = index;
+    const thumb = thumbnails[index];
+    previewImg.src = thumb.dataset.full;
+    
+    thumbnails.forEach(t => t.classList.remove('active'));
+    thumb.classList.add('active');
+    
+    if (imageCounter) {
+      imageCounter.textContent = `${index + 1} / ${thumbnails.length}`;
+    }
+  }
+  
+  thumbnails.forEach((thumb, index) => {
+    thumb.addEventListener('click', () => updatePreview(index));
+  });
+  
+  if (prevThumb) {
+    prevThumb.addEventListener('click', () => {
+      const newIndex = (currentThumbIndex - 1 + thumbnails.length) % thumbnails.length;
+      updatePreview(newIndex);
+    });
+  }
+  
+  if (nextThumb) {
+    nextThumb.addEventListener('click', () => {
+      const newIndex = (currentThumbIndex + 1) % thumbnails.length;
+      updatePreview(newIndex);
+    });
+  }
+
+  // =====================
+  // LIGHTBOX FUNCTIONALITY
+  // =====================
+  const lightbox = document.getElementById('lightbox');
+  const lightboxImg = document.getElementById('lightboxImg');
+  const imageContainer = document.getElementById('imageContainer');
+  const zoomLevel = document.getElementById('zoomLevel');
+  const zoomHint = document.getElementById('zoomHint');
+  const imgCounter = document.getElementById('imgCounter');
+  
+  if (!lightbox) return;
+  
+  const zoomLevels = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 4, 5];
+  let currentZoomIndex = 2;
+  
+  let images = [];
+  let currentIndex = 0;
+  let isDragging = false;
+  let startX, startY, translateX = 0, translateY = 0;
+  
+  // Zbierz obrazki
+  thumbnails.forEach((thumb) => {
+    images.push(thumb.dataset.full);
+  });
+  
+  // Jeśli nie ma thumbnails, użyj preview image
+  if (images.length === 0 && previewImg) {
+    images.push(previewImg.src);
+  }
+  
+  // Kliknięcie w preview otwiera lightbox
+  if (previewImg) {
+    previewImg.addEventListener('click', () => {
+      openLightbox(currentThumbIndex);
+    });
+  }
+  
+  function openLightbox(index) {
+    currentIndex = index;
+    currentZoomIndex = 2;
+    translateX = 0;
+    translateY = 0;
+    updateImage();
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => zoomHint.classList.add('hidden'), 3000);
+  }
+  
+  function closeLightbox() {
+    lightbox.classList.remove('active');
+    document.body.style.overflow = '';
+    zoomHint.classList.remove('hidden');
+  }
+  
+  function updateImage() {
+    lightboxImg.src = images[currentIndex];
+    imgCounter.textContent = `${currentIndex + 1} / ${images.length}`;
+    applyTransform();
+  }
+  
+  function applyTransform() {
+    const scale = zoomLevels[currentZoomIndex];
+    imageContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+    
+    const percent = Math.round(scale * 100);
+    zoomLevel.textContent = `${percent}%`;
+    
+    zoomLevel.className = 'zoom-indicator';
+    if (scale <= 0.75) zoomLevel.classList.add('level-1');
+    else if (scale <= 1) zoomLevel.classList.add('level-2');
+    else if (scale <= 2) zoomLevel.classList.add('level-3');
+    else if (scale <= 3) zoomLevel.classList.add('level-4');
+    else zoomLevel.classList.add('level-5');
+    
+    if (scale <= 1) {
+      translateX = 0;
+      translateY = 0;
+      imageContainer.style.transform = `scale(${scale})`;
+    }
+  }
+  
+  function zoomIn() {
+    if (currentZoomIndex < zoomLevels.length - 1) {
+      currentZoomIndex++;
+      applyTransform();
+    }
+  }
+  
+  function zoomOut() {
+    if (currentZoomIndex > 0) {
+      currentZoomIndex--;
+      applyTransform();
+    }
+  }
+  
+  function resetZoom() {
+    currentZoomIndex = 2;
+    translateX = 0;
+    translateY = 0;
+    applyTransform();
+  }
+  
+  function nextImage() {
+    currentIndex = (currentIndex + 1) % images.length;
+    resetZoom();
+    updateImage();
+    updatePreview(currentIndex);
+  }
+  
+  function prevImage() {
+    currentIndex = (currentIndex - 1 + images.length) % images.length;
+    resetZoom();
+    updateImage();
+    updatePreview(currentIndex);
+  }
+  
+  function downloadImage() {
+    const link = document.createElement('a');
+    link.href = images[currentIndex];
+    link.download = images[currentIndex].split('/').pop();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+  
+  // Event listeners
+  document.getElementById('zoomIn').addEventListener('click', zoomIn);
+  document.getElementById('zoomOut').addEventListener('click', zoomOut);
+  document.getElementById('zoomReset').addEventListener('click', resetZoom);
+  document.getElementById('nextImg').addEventListener('click', nextImage);
+  document.getElementById('prevImg').addEventListener('click', prevImage);
+  document.getElementById('downloadImg').addEventListener('click', downloadImage);
+  document.getElementById('closeLightbox').addEventListener('click', closeLightbox);
+  
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox || e.target.classList.contains('lightbox-content')) {
+      closeLightbox();
+    }
+  });
+  
+  lightbox.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (e.deltaY < 0) zoomIn();
+    else zoomOut();
+  }, { passive: false });
+  
+  imageContainer.addEventListener('mousedown', (e) => {
+    if (zoomLevels[currentZoomIndex] > 1) {
+      isDragging = true;
+      imageContainer.classList.add('dragging');
+      startX = e.clientX - translateX;
+      startY = e.clientY - translateY;
+    }
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      translateX = e.clientX - startX;
+      translateY = e.clientY - startY;
+      applyTransform();
+    }
+  });
+  
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+    imageContainer.classList.remove('dragging');
+  });
+  
+  document.addEventListener('keydown', (e) => {
+    if (!lightbox.classList.contains('active')) return;
+    
+    switch(e.key) {
+      case 'Escape': closeLightbox(); break;
+      case 'ArrowRight': nextImage(); break;
+      case 'ArrowLeft': prevImage(); break;
+      case '+': case '=': zoomIn(); break;
+      case '-': zoomOut(); break;
+      case '0': resetZoom(); break;
+      case 's': case 'S': downloadImage(); break;
+    }
+  });
+  
+  imageContainer.addEventListener('dblclick', () => {
+    if (currentZoomIndex === 2) {
+      currentZoomIndex = 5;
+    } else {
+      currentZoomIndex = 2;
+      translateX = 0;
+      translateY = 0;
+    }
+    applyTransform();
+  });
+});
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('uploadForm');
+    const spinner = document.getElementById('loadingSpinner');
+
+    form.addEventListener('submit', function() {
+      spinner.style.display = 'flex';
+    });
+  });
+</script>
 {% endblock content %}
