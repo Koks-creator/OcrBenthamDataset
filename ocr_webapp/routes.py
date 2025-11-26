@@ -19,6 +19,7 @@ def home():
         form = forms.MainForm()
         image_filenames = []
         results = []
+        json_res = {}
 
         if not app.config["TESTING"]:
             val_mode = 0
@@ -64,7 +65,7 @@ def home():
                 for line in lines_list.values():
                     x1, y1, x2, y2 = line["bbox"]
                     cv2.rectangle(img, (x1, y1), (x2, y2), (200, 0, 200), 1, 1)
-                    cv2.putText(img, line["ocr_res"], (x1, y1-1), cv2.FONT_HERSHEY_PLAIN, .7, (200, 0, 200), 1)
+                    cv2.putText(img, line["ocr_res"], (x1, y1-1), cv2.FONT_HERSHEY_PLAIN, .9, (200, 0, 200), 1)
                     cv2.imwrite(img_path, img)
             results = resp["result"]
             app.logger.info(f"Predictions: {len(resp['result'])=}, {len(resp['result_detailed'])=}")
@@ -75,29 +76,7 @@ def home():
                 json_res[filename] = res
         else:
             app.logger.error(f"Co tu sie odjebało? {len(results)=} != { len(image_filenames)=}")
-
-        #     app.logger.info(f"{predictions=}")
-        # if image_datas:
-        #     res = zip(image_datas, predictions)
-        # else:
-        #     res = []
-        # res_to_save = {
-        #     "Filename": "",
-        #     "Prediction": ""
-        # }
-        return render_template("home.html", form=form, results=results, image_filenames=image_filenames, json_res=json_res)
     except Exception as e:
         app.logger.error(f"Unknown error: {e}")
-        return redirect(url_for("error_page", error=e, status_code=500))
-    
-
-@app.route("/error", methods=["GET"])
-def error_page():
-    error_msg = request.args.get("error", "Unknown error occured")
-    error_status_code = request.args.get("status_code", 500)
-    try:
-        error_status_code = int(error_status_code)
-    except ValueError:
-        error_status_code = 500
-    
-    return render_template("error_page.html", status_code=500, error_text=error_msg)
+        flash(f"Error: {e}", "danger")
+    return render_template("home.html", form=form, results=results, image_filenames=image_filenames, json_res=json_res)
