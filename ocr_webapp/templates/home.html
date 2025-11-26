@@ -2,24 +2,20 @@
 
 {% block content %}
 <div class="container text-center">
-  <h1 class="display-1 my-4" style="padding: 50px;">Simple OCR</h1>
-
+  <br>
+  <br>
   <div class="jumbotron position-relative" style="background-color: #212529;">
-    <div class="row mb-4">
-      <div class="col text-start">
-        <button
-          type="button"
-          class="btn btn-secondary px-4"
-          data-bs-container="body"
-          data-bs-toggle="popover"
-          data-bs-placement="right"
-          data-bs-content="INFO: this OCR model was trained on quite short sequences,
-           mostly single words (since it was traied on IAM dataset), so don't expect too much, https://fki.tic.heia-fr.ch/databases/iam-handwriting-database"
-        >
-          Read it
-        </button>
-      </div>
-    </div>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flashes">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                {{ message }}
+                </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+      {% endwith %}
 
     <!-- Loading Spinner (hidden by default) -->
     <div id="loadingSpinner" class="spinner-container" style="display: none;">
@@ -29,25 +25,92 @@
       <p class="mt-2 text-light">Processing images, please wait...</p>
     </div>
 
-    <div class="row justify-content-center">
-      <div class="col-md-6 col-12">
+    <!-- Upload Section -->
+    <div class="upload-section">
+      <div class="upload-card">
+        <div class="upload-header">
+          <div class="upload-icon">📄</div>
+          <h2 class="upload-title">Upload Your Images</h2>
+          <p class="upload-subtitle">Select one or more images containing handwritten text</p>
+        </div>
+        
         <form id="uploadForm" method="post" enctype="multipart/form-data">
           {{ form.hidden_tag() }}
-          <fieldset class="form-group">
-            <div class="uploadFileContainer mx-auto" style="width: 100%;">
+          <div class="upload-body">
+            <div class="file-input-wrapper">
               {% if form.images.errors %}
-                {{ form.images(class='form-control is-invalid', multiple=True) }}
+                {{ form.images(class='form-control form-control-lg is-invalid', multiple=True, id='fileInput') }}
                 {% for error in form.images.errors %}
-                  <div class="text-danger">{{ error }}</div>
+                  <div class="text-danger mt-2">{{ error }}</div>
                 {% endfor %}
               {% else %}
-                {{ form.images(class='form-control') }}
+                {{ form.images(class='form-control form-control-lg', multiple=True, id='fileInput') }}
               {% endif %}
-              <br>
-              {{ form.submit(class='submitButton') }}
+              <div class="file-hint">
+                <span>💡</span> Supported formats: JPG, PNG, BMP, TIFF
+              </div>
             </div>
-          </fieldset>
+            
+            <div class="upload-actions">
+              {{ form.submit(class='btn-upload') }}
+            </div>
+          </div>
         </form>
+      </div>
+      
+      <!-- Info Button -->
+      <div class="info-toggle-wrapper">
+        <button type="button" class="info-toggle-btn" data-bs-toggle="collapse" data-bs-target="#modelInfo" aria-expanded="false">
+          <span class="info-icon">ℹ️</span>
+          <span>About this OCR model</span>
+          <span class="chevron">▼</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Model Info Section (Collapsible) -->
+    <div class="collapse" id="modelInfo">
+      <div class="model-info-section">
+        <div class="info-grid">
+          
+          <div class="info-card">
+            <div class="info-card-icon">🧠</div>
+            <h3>Model Architecture</h3>
+            <p>
+              This OCR system uses a deep learning model based on CNN and RNN layers with Connectionist Temporal Classification loss function to
+              extract text from cropped text lines - these text line are detected by Yolov11 object detection model.
+            </p>
+          </div>
+          
+          <div class="info-card">
+            <div class="info-card-icon">📚</div>
+            <h3>Training Data</h3>
+            <p>
+              The model was trained on the <a href="https://zenodo.org/records/44519">Bentham dataset</a> which is a collection 
+              consists of a set of images of a collection of works on law and moral philosophy written by the philosopher Jeremy Bentham.
+            </p>
+          </div>
+          
+          <div class="info-card">
+            <div class="info-card-icon">⚙️</div>
+            <h3>How It Works</h3>
+            <p>
+              When uploading images our Yolov11 object detection model detects text lines,
+              draws boxes around them, crops text lines and store them. Stored images of cropped text lines
+              are loaded to the OCR model, so the actual text can be extracted and return results.
+            </p>
+          </div>
+          
+          <div class="info-card">
+            <div class="info-card-icon">⚠️</div>
+            <h3>Limitations</h3>
+            <p>
+              This model was trained on historical papers, which are quite specific, so it's not gonna perform well on modern ones.
+            </p>
+          </div>
+          
+        </div>
+        </div>
       </div>
     </div>
 
@@ -60,28 +123,28 @@
           <!-- Left: Text Results -->
           <div class="ocr-text-panel">
             <div class="panel-header">
-              <span class="panel-title">📝 Rozpoznany tekst</span>
+              <span class="panel-title">📝 Extracted text</span>
               <div class="panel-actions">
                 <span id="charCount" class="char-count"></span>
-                <button id="copyBtn" class="copy-btn" title="Kopiuj do schowka">
+                <button id="copyBtn" class="copy-btn" title="Copy to clipboard">
                   <span class="copy-icon">📋</span>
-                  <span class="copy-text">Kopiuj</span>
+                  <span class="copy-text">Copy</span>
                 </button>
               </div>
             </div>
-            <div id="resultsBox" class="results-box">{% for i in range(results | length) %}{{ image_filenames[i] }} <br><br> {{ results[i] }}<br>{% if not loop.last %}
+            <div id="resultsBox" class="results-box">{% for i in range(results | length) %}<strong>{{ image_filenames[i] }}</strong> <br><br> {{ results[i] }}<br>{% if not loop.last %}
 {% endif %}{% endfor %}</div>
           </div>
           
           <!-- Right: Image Preview -->
           <div class="ocr-image-panel">
             <div class="panel-header">
-              <span class="panel-title">🖼️ Obraz źródłowy</span>
+              <span class="panel-title">🖼️ Images</span>
               <div class="panel-actions">
                 <span id="imageCounter" class="image-counter">1 / {{ image_filenames|length }}</span>
                 {% if image_filenames|length > 1 %}
-                <button id="prevThumb" class="nav-btn" title="Poprzedni">❮</button>
-                <button id="nextThumb" class="nav-btn" title="Następny">❯</button>
+                <button id="prevThumb" class="nav-btn" title="Previous">❮</button>
+                <button id="nextThumb" class="nav-btn" title="Next">❯</button>
                 {% endif %}
               </div>
             </div>
@@ -89,9 +152,8 @@
               <img id="previewImg" 
                    src="{{ url_for('static', filename='temp_uploads/' ~ image_filenames[0]) }}" 
                    class="preview-image"
-                   title="Kliknij aby powiększyć">
+                   title="Click to enlarge">
               
-              <!-- Thumbnails (jeśli więcej niż 1 obrazek) -->
               {% if image_filenames|length > 1 %}
               <div class="thumbnails-strip">
                 {% for image_filename in image_filenames %}
@@ -106,11 +168,17 @@
           </div>
           
         </div>
+        
+        <!-- Download JSON Button -->
+        <div class="download-section mt-4">
+          <button id="downloadJsonBtn" class="download-json-btn" title="Download the results as a JSON">
+            <span class="download-icon">📥</span>
+            <span class="download-text">Download results (JSON)</span>
+          </button>
+        </div>
+        
       </div>
 
-      <div class="mt-3">
-        {{ json_res }}
-      </div>
     {% endif %}
   </div>
 </div>
@@ -119,19 +187,19 @@
 <div id="lightbox" class="lightbox-overlay">
   <div class="lightbox-controls">
     <div class="zoom-controls">
-      <button id="zoomOut" class="lb-btn" title="Oddal (-)">−</button>
+      <button id="zoomOut" class="lb-btn" title="Zoom out (-)">−</button>
       <span id="zoomLevel" class="zoom-indicator">100%</span>
-      <button id="zoomIn" class="lb-btn" title="Przybliż (+)">+</button>
+      <button id="zoomIn" class="lb-btn" title="Zoom in (+)">+</button>
       <button id="zoomReset" class="lb-btn" title="Reset (0)">⟲</button>
     </div>
     <div class="nav-controls">
-      <button id="prevImg" class="lb-btn" title="Poprzedni (←)">❮</button>
+      <button id="prevImg" class="lb-btn" title="Previous (←)">❮</button>
       <span id="imgCounter" class="img-counter">1 / 1</span>
-      <button id="nextImg" class="lb-btn" title="Następny (→)">❯</button>
+      <button id="nextImg" class="lb-btn" title="Next (→)">❯</button>
     </div>
     <div class="action-controls">
-      <button id="downloadImg" class="lb-btn" title="Pobierz (S)">⬇</button>
-      <button id="closeLightbox" class="lb-btn" title="Zamknij (Esc)">✕</button>
+      <button id="downloadImg" class="lb-btn" title="Download">⬇</button>
+      <button id="closeLightbox" class="lb-btn" title="Close (Esc)">✕</button>
     </div>
   </div>
   
@@ -142,9 +210,16 @@
   </div>
   
   <div class="zoom-hint" id="zoomHint">
-    Użyj kółka myszy lub przycisków +/- aby przybliżać
+    Use the mouse wheel or the +/- buttons to zoom in.
   </div>
 </div>
+
+<!-- JSON Data for Download -->
+{% if json_res %}
+<script id="jsonData" type="application/json">
+  {{ json_res | tojson | safe }}
+</script>
+{% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -160,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const text = resultsBox.textContent;
     const chars = text.length;
     const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-    charCount.textContent = `${chars} zn. / ${words} sł.`;
+    charCount.textContent = `${chars} chars / ${words} words`;
   }
   
   if (copyBtn && resultsBox) {
@@ -188,14 +263,80 @@ document.addEventListener('DOMContentLoaded', function() {
       
       copyBtn.classList.add('copied');
       icon.textContent = '✓';
-      text.textContent = 'Skopiowano!';
+      text.textContent = 'Copied!';
       
       setTimeout(() => {
         copyBtn.classList.remove('copied');
         icon.textContent = '📋';
-        text.textContent = 'Kopiuj';
+        text.textContent = 'Copy';
       }, 2000);
     }
+  }
+
+  // =====================
+  // DOWNLOAD JSON FUNCTIONALITY
+  // =====================
+  const downloadJsonBtn = document.getElementById('downloadJsonBtn');
+  const jsonDataElement = document.getElementById('jsonData');
+  
+  if (downloadJsonBtn && jsonDataElement) {
+    downloadJsonBtn.addEventListener('click', () => {
+      try {
+        const jsonData = JSON.parse(jsonDataElement.textContent);
+        const jsonString = JSON.stringify(jsonData, null, 2);
+        
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
+        link.download = `ocr_results_${dateStr}.json`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        showDownloadSuccess();
+        
+      } catch (err) {
+        console.error('Error downloading JSON:', err);
+        alert('Error downloading JSON file');
+      }
+    });
+    
+    function showDownloadSuccess() {
+      const icon = downloadJsonBtn.querySelector('.download-icon');
+      const text = downloadJsonBtn.querySelector('.download-text');
+      
+      downloadJsonBtn.classList.add('downloaded');
+      icon.textContent = '✓';
+      text.textContent = 'Downloaded!';
+      
+      setTimeout(() => {
+        downloadJsonBtn.classList.remove('downloaded');
+        icon.textContent = '📥';
+        text.textContent = 'Download results (JSON)';
+      }, 2000);
+    }
+  }
+
+  // =====================
+  // INFO TOGGLE ANIMATION
+  // =====================
+  const infoToggle = document.querySelector('.info-toggle-btn');
+  const modelInfo = document.getElementById('modelInfo');
+  
+  if (infoToggle && modelInfo) {
+    modelInfo.addEventListener('show.bs.collapse', () => {
+      infoToggle.classList.add('active');
+    });
+    modelInfo.addEventListener('hide.bs.collapse', () => {
+      infoToggle.classList.remove('active');
+    });
   }
 
   // =====================
@@ -261,17 +402,14 @@ document.addEventListener('DOMContentLoaded', function() {
   let isDragging = false;
   let startX, startY, translateX = 0, translateY = 0;
   
-  // Zbierz obrazki
   thumbnails.forEach((thumb) => {
     images.push(thumb.dataset.full);
   });
   
-  // Jeśli nie ma thumbnails, użyj preview image
   if (images.length === 0 && previewImg) {
     images.push(previewImg.src);
   }
   
-  // Kliknięcie w preview otwiera lightbox
   if (previewImg) {
     previewImg.addEventListener('click', () => {
       openLightbox(currentThumbIndex);
@@ -366,7 +504,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.removeChild(link);
   }
   
-  // Event listeners
   document.getElementById('zoomIn').addEventListener('click', zoomIn);
   document.getElementById('zoomOut').addEventListener('click', zoomOut);
   document.getElementById('zoomReset').addEventListener('click', resetZoom);
