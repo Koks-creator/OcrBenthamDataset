@@ -7,7 +7,7 @@ import requests
 import io
 import time
 import cv2
-from flask import render_template, session, redirect, url_for, flash, request
+from flask import render_template, flash, request
 
 from config import Config
 from ocr_webapp import app, forms
@@ -65,7 +65,7 @@ def home():
                 for line in lines_list.values():
                     x1, y1, x2, y2 = line["bbox"]
                     cv2.rectangle(img, (x1, y1), (x2, y2), (200, 0, 200), 1, 1)
-                    cv2.putText(img, line["ocr_res"], (x1, y1-1), cv2.FONT_HERSHEY_PLAIN, .9, (200, 0, 200), 1)
+                    cv2.putText(img, line["ocr_res"], (x1, y1-1), cv2.FONT_HERSHEY_PLAIN, 1, (200, 0, 200), 1)
                     cv2.imwrite(img_path, img)
             results = resp["result"]
             app.logger.info(f"Predictions: {len(resp['result'])=}, {len(resp['result_detailed'])=}")
