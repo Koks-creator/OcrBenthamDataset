@@ -9,7 +9,7 @@ class Config:
     # Overall
     ROOT_PATH: str = Path(__file__).resolve().parent
 
-        # Folders
+    # Folders
     RAW_DATA_PATH: Union[str, os.PathLike, Path] = fr"{ROOT_PATH}/RawData"
     CLEANED_DATA_PATH: Union[str, os.PathLike, Path] = fr"{ROOT_PATH}/DataCleaned"
     TRAIN_IMAGES_FOLDER: Union[str, os.PathLike, Path] = fr"{ROOT_PATH}/train_data/images/train"
@@ -39,7 +39,6 @@ class Config:
     YOLO_MODEL_NAME: str = "line_det_model_m.pt"
     YOLO_CLASSES_FILE: str = f"{YOLO_MODELS_FOLDER_PATH}/classes.txt"
     DEVICE: str = "cpu"
-
 
     # API
     API_PORT: int = 5000
