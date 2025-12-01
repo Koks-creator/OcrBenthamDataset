@@ -276,11 +276,13 @@ For taining use **bentham_ocr.ipynb**, in Colab/jupiter with access to GPU but f
 
 
 Loss history
+<br>
 ![alt text](assets/Figure_1.png)
 
 Loss value goes down to around 15 for validation dataset and is close to 1 for training dataset. For validation loss, after 10th epoch line starts to flatten with some up and down picks and finally after aound 32th epoch it flattens almost perfectly while train loss is keep on decresing since 10th epoch.
 
 Accuracy history
+<br>
 ![alt text](assets/Figure_2.png)
 
 Accuracy for validation dataset reaches 0.9 at it's peak and training accuacy is almost 1. Like in the loss history we can see that around 8-10th epoch validation accuracy is going up and down and after 32th epoch it flattens while train accuracy is raising and raising without any ups and downs.
