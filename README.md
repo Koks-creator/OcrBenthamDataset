@@ -271,7 +271,7 @@ def ctc_accuracy(y_true: TensorLike, y_pred: TensorLike, padding_token: int = PA
     return accuracy
 ```
 
-# Training
+### 9. Training
 For taining use **bentham_ocr.ipynb**, in Colab/jupiter with access to GPU but free GPU might have not enought VRAM for 3 layers of 768 units LSTMs, so I recommend smaller model or upgrading to premium or other environment with better GPU.
 
 
