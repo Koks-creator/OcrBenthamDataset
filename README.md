@@ -275,14 +275,14 @@ def ctc_accuracy(y_true: TensorLike, y_pred: TensorLike, padding_token: int = PA
 For taining use **bentham_ocr.ipynb**, in Colab/jupiter with access to GPU but free GPU might have not enought VRAM for 3 layers of 768 units LSTMs, so I recommend smaller model or upgrading to premium or other environment with better GPU.
 
 
-Loss history
-<br>
+**Loss history**
+
 ![alt text](assets/Figure_1.png)
 
 Loss value goes down to around 15 for validation dataset and is close to 1 for training dataset. For validation loss, after 10th epoch line starts to flatten with some up and down picks and finally after aound 32th epoch it flattens almost perfectly while train loss is keep on decresing since 10th epoch.
 
-Accuracy history
-<br>
+**Accuracy history**
+
 ![alt text](assets/Figure_2.png)
 
 Accuracy for validation dataset reaches 0.9 at it's peak and training accuacy is almost 1. Like in the loss history we can see that around 8-10th epoch validation accuracy is going up and down and after 32th epoch it flattens while train accuracy is raising and raising without any ups and downs.
@@ -291,6 +291,44 @@ These results show that model is quite successful and can be used for target tas
 
 ## Yolov11 Model
 
-Yolov11 has been trained using pages from Bentham dataset - https://zenodo.org/records/44519/files/BenthamDatasetR0-Images.tbz. There is only one class `line` in classes.txt - this class was used to label each text line in the page. 
+Yolov11 has been trained using pages from Bentham dataset - https://zenodo.org/records/44519/files/BenthamDatasetR0-Images.tbz. There is only one class `line` in classes.txt - this class was used to label each text line in the page.
+
+**mAP50-95(B)**
+
+![alt text](assets/Figure_3.png)
+
+mAP50-95 – mean Average Precision averaged across IoU thresholds from 50% to 95%. 
+At the beginning, the value rises rapidly, but after the 30th epoch it starts 
+to plateau with some fluctuations within the 0.6–0.7 range. 
+The metric peaks at approximately 0.72–0.75.
+
+**mAP50(B)**
+
+![alt text](assets/Figure_4.png)
+
+mAP50 - percentage of correct detections at IoU ≥ 50%. mAP50 goes up rapidly until 20th epoch, then it starts to flatten with some fluctuations within the 0.9–1 range. The metric peaks at almost 1.
+
+**Box loss**
+
+![alt text](assets/Figure_5.png)
+
+Box loss – bounding box localization error (position and size). The lower the value, 
+the more accurate the bounding boxes are. Training box loss decreases steadily, 
+reaching approximately 0.2-0.3. Validation box loss fluctuates significantly in the 
+early epochs, but after the 20th epoch the fluctuations become smaller, 
+stabilizing within the 0.9–1.0 range.
+
+**Cls loss**
+
+![alt text](assets/Figure_6.png)
+
+Cls loss - classification error. Train cls loss flattens quickly and reaches 0.3-0.4, while validation loss has it ups and downs but reaches similiar value as train cls loss.
 
 
+**Precision and recall**
+
+![alt text](assets/Figure_7.png)
+
+Precision – how many of the detected objects are actual objects? (high = few false positives)
+Recall – how many of the actual objects did the model detect? (high = few false negatives)
+Both values are behave in almost the same way, at the beggining there is some fluctuations but after 25th epoch it starts to flatten (with some ups and downs) and finally both values reach around .95.
