@@ -329,6 +329,8 @@ Cls loss - classification error. Train cls loss flattens quickly and reaches 0.3
 
 ![alt text](assets/Figure_7.png)
 
-Precision – how many of the detected objects are actual objects? (high = few false positives)
-Recall – how many of the actual objects did the model detect? (high = few false negatives)
+Precision – how many of the detected objects are actual objects? (high = few false positives).
+
+Recall – how many of the actual objects did the model detect? (high = few false negatives).
+
 Both values are behave in almost the same way, at the beggining there is some fluctuations but after 25th epoch it starts to flatten (with some ups and downs) and finally both values reach around .95.
