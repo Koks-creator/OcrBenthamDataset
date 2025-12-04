@@ -334,3 +334,277 @@ Precision – how many of the detected objects are actual objects? (high = few f
 Recall – how many of the actual objects did the model detect? (high = few false negatives).
 
 Both values are behave in almost the same way, at the beggining there is some fluctuations but after 25th epoch it starts to flatten (with some ups and downs) and finally both values reach around .95.
+
+
+## Configuration
+See `config.py`
+
+## Modules
+
+### <u>***yolo_detector.py***</u>
+Detector for yolov11, for both regular and sahi version.
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `model_path` | `str` | - | Path to the YOLOv11 model weights file (required) |
+| `classes_path` | `str` | - | Path to model classes (required) |
+| `device` | `str` |  `"cpu"` | Device ("cpu", "cuda:0") |
+
+### **Methods:**
+`detect` - detection function that processes an image and returns detection results.
+
+#### **Parameters:**
+ - `images`: `List[np.array]` - List of numpy images.
+ - `conf`: `float` - Detection confidence threshold (0-1.0).
+ - `iou`: `float` - Intersection Over Union (IoU) threshold for Non-Maximum Suppression (NMS). Lower values result in fewer detections by eliminating overlapping boxes, useful for reducing duplicates.
+ - `augment`: `bool` - Enables test-time augmentation (TTA) for predictions, potentially improving detection robustness at the cost of inference speed.
+ - `agnostic_nms`: `float` - Enables class-agnostic Non-Maximum Suppression (NMS), which merges overlapping boxes of different classes. Useful in multi-class detection scenarios where class overlap is common.
+
+#### **Returns:**
+  - `List[tuple]` - return list of tuples, each tuple contains pair of detection data and image with drawn detections.
+
+<br>
+<hr>
+
+`detect_with_sahi` - detection function that processes an image and returns detection results BUT with **SAHI** (Slicing Aided Hyper Inference - https://docs.ultralytics.com/guides/sahi-tiled-inference/), which helps a lot in detecting really small objects.
+
+#### **Parameters:**
+ - `images`: `List[np.ndarray]` - List of numpy images.
+ - `conf`: `float` - Confidence threshold.
+ - `slice_height`, `slice_width`: `int` - The larger the better detection of smaller objects but longer processing time.
+ - `overlap_height_ratio`, `overlap_width_ratio`: `int` - Slice overlay.
+
+#### **Returns:**
+ - `List[tuple]` - return list of tuples, each tuple contains pair of detection data and image with drawn detections.
+
+<br>
+<hr>
+
+`yield_data` - Method for yielding detection data from `detect` method.
+#### **Parameters:**
+ - `bbox`: `Boxes` - Detection data from `detect`.
+#### **Returns:**
+ - `Generator` - processed detection data into: `cls_id, class_name, conf,  (x1, y1, x2, y2)`
+
+ <br>
+<hr>
+
+`yield_sahi_data` - Method for yielding detection data from `detect_with_sahi` method.
+#### **Parameters:**
+ - `sahi_result`: `PredictionResult` - Detection data from `detect_with_sahi`.
+#### **Returns:**
+- `Generator` - processed detection data into: `cls_id, class_name, conf, (x1, y1, x2, y2)`
+
+### **Basic usage:**
+```python
+yolo_predictor = YoloDetector(
+        model_path=model_path,
+        classes_path=classes_path
+)
+image = cv2.imread(image_path)
+res, res_img = yolo_predictor.detect(images=[image])[0]
+#res, res_img = self.yolo_detector.detect_with_sahi(images=[frame])[0]
+
+detection_res_gen = self.yolo_detector.yield_data(bbox=res)
+# detection_res_gen = self.yolo_detector.yield_sahi_data(sahi_result=res)
+for detection in detection_res_gen:
+    class_id, _, conf, x1, y1, x2, y2 = *detection[:3], *detection[3]
+cv2.imshow("res", res_img)
+cv2.waitKey(0)
+```
+
+### <u>***ocr_predictor.py***</u>
+Model for making OCR prediction.
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `model_folder_path` | `str` | - | Path to the ocr model |
+
+### **Methods:**
+`distortion_free_resize` - method for resizing images.
+
+#### **Parameters:**
+ - `images`: `TensorLike` - tensor image.
+ - `img_size`: `Tuple[int, int]`
+
+#### **Returns:**
+ - `TensorLike` - resized images.
+
+<br>
+
+`decode_batch_predictions` - method for decoding predictions.
+
+#### **Parameters:**
+ - `pred`: `TensorLike` - models prediction.
+
+#### **Returns:**
+ - `List[str]` - list of returned text.
+
+
+<br>
+
+`get_predictions` - method for decoding predictions.
+
+#### **Parameters:**
+ - `images`: `List[TensorLike]` - list of tensor images.
+ - `img_size`: `Tuple[int, int]`
+
+#### **Returns:**
+ - `List[str]` - list of returned text.
+
+### **Basic usage:**
+```python
+    ocr_predictor = OcrPredictor(
+            model_folder_path=f"{Config.OCR_MODELS_FOLDER_PATH}{Config.OCR_MODEL_NAME}"
+        )
+    images = []
+    images_paths = [
+        "images/test.png"
+    ]
+    for image_path in images_paths:
+        image = tf.io.read_file(image_path)
+        image = tf.image.decode_png(image, 1)
+        print(image.shape)
+        # print(image[-1])
+        images.append(image)
+
+    print(ocr_predictor.get_predictions(
+        images=images,
+        img_size=(Config.IMAGE_HEIGHT, Config.IMAGE_WIDTH)
+    ))
+```
+
+### <u>***tools.py***</u>
+Tools for sorting text lines from top to the bottom.
+
+### **Methods:**
+`smart_sort_text_lines` - a lil bit more smart text line sorting with automatic layout detection.
+
+#### **Parameters:**
+ - `boxes`: `list` - list of text line boxes.
+ - `debug`: `bool`
+
+#### **Returns:**
+ - `list` - list of text line boxes...but sorted.
+
+<br>
+
+`sort_reading_order_universal` - sort bounding boxes in natural reading order: line by line, left to right.
+
+#### **Parameters:**
+ - `boxes`: `list` - list of text line boxes.
+ - `y_tolerance`: `int` - Vertical grouping threshold in pixels. Boxes within y_tolerance pixels are considered same row.
+ - `debug`: `bool`
+
+#### **Returns:**
+ - `list` - list of text line boxes...but sorted.
+
+<br>
+
+`auto_sort_boxes` - wrapper - selects the best strategy
+
+#### **Parameters:**
+ - `boxes`: `list` - list of text line boxes.
+ - `strategy`: `str` - auto, main_first (smart_sort_text_lines), reading_order (sort_reading_order_universal), `auto` by default.
+ - `debug`: `bool`
+
+#### **Returns:**
+ - `list` - list of text line boxes...but sorted.
+
+### <u>***document_ocr.py***</u>
+Final module with full solution - Yolo + OCR.
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `model_path` | `Union[Path, str]` | - | Path to the YOLOv11 model weights file (required) |
+| `classes_path` | `Union[Path, str]` | - | Path to model classes (required) |
+| `device` | `str` |  `"cpu"` | Device ("cpu", "cuda:0") |
+| `ocr_model_path` | `Union[Path, str]` |  - | ocr model folder |
+
+### **Methods:**
+`get_yolo_predictions` - self explanatory.
+
+#### **Parameters:**
+ - `images`: `List[np.ndarray]` - list of numpy images.
+ - `conf`: `float` - detection confidence threshold (0-1.0).
+ - `iou`: `float` - Intersection Over Union (IoU) threshold for Non-Maximum Suppression (NMS). Lower values result in fewer detections by eliminating overlapping boxes, useful for reducing duplicates.
+ - `augment`: `bool` -  enables test-time augmentation (TTA) for predictions, potentially improving detection robustness at the cost of inference speed.
+ - `agnostic_nms`: `bool` - enables class-agnostic Non-Maximum Suppression (NMS), which merges overlapping boxes of different classes. Useful in multi-class detection scenarios where class overlap is common.
+
+#### **Returns:**
+ - `Tuple[List[Generator], List[np.ndarray], List[np.ndarray]]` - detection_generators, detection_frames (with drawn detections), images (original images).
+
+<br>
+
+`normalize_yolo_predictions` - normalizing results from `get_yolo_predictions`.
+
+#### **Parameters:**
+ - `detection_generators`: `List[Generator]`
+ - `detection_frames`: `List[np.ndarray]`
+ - `images`: `List[np.ndarray]`
+
+#### **Returns:**
+ - `List[FrameDetectionData]` - list of normalized results.
+
+    ```python
+
+    @dataclass(frozen=True)
+    class FrameDetectionData:
+        original_frame: np.ndarray
+        detection_frame: np.ndarray
+        detections_data: Generator
+    ```
+<br>
+
+`get_ocr_result` - getting results using normalized data from `normalize_yolo_predictions`.
+
+#### **Parameters:**
+ - `normalized_data`: `List[List[FrameDetectionData]]`
+ - `img_height`: `int`
+ - `img_width`: `int`
+
+#### **Returns:**
+ - `Tuple[List[str], defaultdict[defaultdict[dict]]]` - list of extracted texts and `[img_ind][text_line_ind] = box of text line` mappings.
+
+
+ <br>
+
+`ocr_full_flow`
+#### **Parameters:**
+ - `images`: `List[np.ndarray]` - list of numpy images.
+ - `conf`: `float` - detection confidence threshold (0-1.0).
+ - `iou`: `float` - Intersection Over Union (IoU) threshold for Non-Maximum Suppression (NMS). Lower values result in fewer detections by eliminating overlapping boxes, useful for reducing duplicates.
+ - `augment`: `bool` -  enables test-time augmentation (TTA) for predictions, potentially improving detection robustness at the cost of inference speed.
+ - `agnostic_nms`: `bool` - enables class-agnostic Non-Maximum Suppression (NMS), which merges overlapping boxes of different classes. Useful in multi-class detection scenarios where class overlap is common.
+ - `img_height`: `int`
+ - `img_width`: `int`
+
+#### **Returns:**
+ - `Tuple[List[str], defaultdict[defaultdict[dict]]]` - list of extracted texts and `[img_ind][text_line_ind] = box of text line` mappings.
+
+
+## Dataset prepations tools
+https://github.com/Koks-creator/DatasetPreparationTools/tree/main
+
+## Api
+See api section on config
+
+#### Start
+```
+python ocr_api/run.py
+```
+
+#### routes
+![alt text](assets/Screenshot_4.png)
+![alt text](assets/Screenshot_5.png)
+
+## Web app
+See web app section on config
+
+#### Start
+```
+python ocr_webapp/run.py
+```
+![alt text](assets/Screenshot_6.png)
+![alt text](assets/Screenshot_7.png)
+![alt text](assets/Screenshot_8.png)
