@@ -89,7 +89,7 @@ class DocumentOcr:
     @log_call(logger=logger, log_params=["img_height", "img_height"], hide_res=True)
     @timeit(logger=logger)
     def get_ocr_result(self, normalized_data: List[List[FrameDetectionData]],
-                       img_height: int, img_width
+                       img_height: int, img_width: int
                        ) -> Tuple[List[str], defaultdict[defaultdict[dict]]]:
         """
         Returns whole text read by ocr from each image (`result`) and more detailed data
