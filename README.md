@@ -4,7 +4,7 @@
 OCR model trained using <a href="https://zenodo.org/records/44519" target="_blank">Bentham Dataset</a>. As stated in the description: <br>
 "The Bentham collection consists of a set of images of a collection of works on law and moral philosophy written by the philosopher Jeremy Bentham.".
 
-It's made of 4 components:
+It's made of 5 components:
  - **ocr_predictor**
  - **ocr_api**
  - **ocr_webapp**
